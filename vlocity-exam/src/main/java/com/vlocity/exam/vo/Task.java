@@ -1,22 +1,19 @@
 package com.vlocity.exam.vo;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
 
 import com.vlocity.exam.exception.ParentTaskNotDoneException;
 import com.vlocity.exam.ui.Planner;
 
-public class Task {
+public class Task extends ParentsTaskAbstr{
 
 	private String status;
 	private int duration;
 	private String taskDescription;
 	private String startDate;
 	private String endDate;
-	private List<Task> parentTasks = new ArrayList<Task>();
 	private Project project;
 	SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 	
@@ -24,11 +21,8 @@ public class Task {
 		return status;
 	}
 	public void setStatus(String status) throws ParentTaskNotDoneException {
-		for(Task task: parentTasks) {
-			if(null != task && !task.getStatus().equalsIgnoreCase("Done")) {
-				throw new ParentTaskNotDoneException();
-			}
-		}
+		
+		checkDependencies();
 		if("In Progress".equalsIgnoreCase(status)) {
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 		String date = dateFormat.format(Calendar.getInstance().getTime());
@@ -55,23 +49,8 @@ public class Task {
 
 		if (null != this.startDate) {
 			return this.startDate;
-		} else if (null != parentTasks && !parentTasks.isEmpty()) {
-			for (Task parentTask : parentTasks) {
-				Date tempDate = null;
-				if (null != parentTask && null != parentTask.getEndDate()) {
-					tempDate = Planner.calculateDate(parentTask.getEndDate(), 0);
-				} else if (null != parentTask && null != parentTask.getStartDate()) {
-					tempDate = Planner.calculateDate(parentTask.getStartDate(), parentTask.getDuration());
-				}
-				if (null == startDate) {
-					startDate = tempDate;
-				} else {
-					if (tempDate.compareTo(startDate) >= 1) {
-						startDate = tempDate;
-					}
-					;
-				}
-			}
+		} else if (null != getDependencies() && !getDependencies().isEmpty()) {
+			startDate = getStartDateBasedOnDependencies();
 		} else if (null != project && null != project.getStartDate()) {
 
 			return project.getStartDate();
@@ -88,27 +67,12 @@ public class Task {
 
 	public String getEndDate() {
 		Date endDate = null;
-		int duration = 0;
+
 		if (null == this.endDate) {
 
-			if (null != parentTasks && !parentTasks.isEmpty()) {
-				for (Task parentTask : parentTasks) {
-					String baseDate = null;
-
-					if (null != parentTask && null != parentTask.getEndDate()) {
-						// if the parent task is done already
-						baseDate = parentTask.getEndDate();
-						duration = this.getDuration();
-					} else if (null != parentTask && null != parentTask.getStartDate()) {
-						// if the parent task is still in progress
-						baseDate = parentTask.getStartDate();
-						duration = parentTask.getDuration() + this.getDuration();
-					}
-					endDate = Planner.calculateDate(baseDate, duration);
-
-				}
-			}
-			if (null == endDate && null != project && null != project.getStartDate()) {
+			if (null != getDependencies() && !getDependencies().isEmpty()) {
+				endDate = getEndDateBasedOnDependencies();
+			}else {
 				// if all parent task dont have date use the project start date
 				endDate = Planner.calculateDate(project.getStartDate(), this.getDuration());
 			}
@@ -116,6 +80,27 @@ public class Task {
 			return this.endDate;
 		}
 		return dateFormat.format(endDate);
+	}
+	
+	public Date getEndDateBasedOnDependencies() {
+		int duration = 0;
+		Date endDate = null;
+		for (Task parentTask : getDependencies()) {
+			String baseDate = null;
+
+			if (null != parentTask && null != parentTask.getEndDate()) {
+				// if the parent task is done already
+				baseDate = parentTask.getEndDate();
+				duration = this.getDuration();
+			} else if (null != parentTask && null != parentTask.getStartDate()) {
+				// if the parent task is still in progress
+				baseDate = parentTask.getStartDate();
+				duration = parentTask.getDuration() + this.getDuration();
+			}
+			endDate = Planner.calculateDate(baseDate, duration);
+
+		}
+		return endDate;
 	}
 	
 	public void setEndDate(String endDate) {
@@ -148,8 +133,31 @@ public class Task {
 	public void setProject(Project project) {
 		this.project = project;
 	}
-	public void addParentTask(Task task) {
-		parentTasks.add(task);
+	public void addDependency(Task task) {
+		getDependencies().add(task);
+		
 	}
+	
+	public Date getStartDateBasedOnDependencies() {
+		Date startDate = null;
+		for (Task parentTask : getDependencies()) {
+			Date tempDate = null;
+			if (null != parentTask && null != parentTask.getEndDate()) {
+				tempDate = Planner.calculateDate(parentTask.getEndDate(), 0);
+			} else if (null != parentTask && null != parentTask.getStartDate()) {
+				tempDate = Planner.calculateDate(parentTask.getStartDate(), parentTask.getDuration());
+			}
+			if (null == startDate) {
+				startDate = tempDate;
+			} else {
+				if (tempDate.compareTo(startDate) >= 1) {
+					startDate = tempDate;
+				}
+				;
+			}
+		}
+		return startDate;
+	}
+
 	
 }

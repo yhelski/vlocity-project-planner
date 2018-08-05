@@ -14,6 +14,7 @@ public class ProjectTest {
 	public void testProjectCanBeCreatedWithProjectName() throws ProjectCannotBeCreatedException {
 		Project project = new Project("Inventory System");
 		assertNotNull("Project should not be null", project);
+		assertEquals("Project name should be Inventory System", project.getProjectTitle());
 	}
 	
 	@Test(expected = ProjectCannotBeCreatedException.class)

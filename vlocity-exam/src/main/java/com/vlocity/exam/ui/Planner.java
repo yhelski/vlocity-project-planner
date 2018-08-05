@@ -58,7 +58,7 @@ public class Planner {
 	 * */
 	public void assigParentTask(int ansInt,int parent) {
 		Task task = this.getSelectedProject().getTaskList().get((ansInt -1));
-		task.addParentTask(this.getSelectedProject().getTaskList().get((parent-1)));
+		task.addDependency(this.getSelectedProject().getTaskList().get((parent-1)));
 	}
 
 	/**

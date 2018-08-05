@@ -195,7 +195,7 @@ public class UIHandler {
 			viewTaskList(planner.getSelectedProject().getTaskList(), null);
 			message.append("Modification successful.");
 			} catch (ParentTaskNotDoneException e) {
-				System.out.println("This task is dependent on another task. Please make sure the parent task is done before starting this task.");
+				System.out.println(e.getMessage());
 				message.append("Modification not successful.");
 			}
 				modifyTask(message.append(" Do you have another task to modify?[Y/N]: ").toString());
